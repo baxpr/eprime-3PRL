@@ -1,0 +1,6 @@
+INPUTS*
+OUTPUTS*
+local*
+*.simg
+*~
+.DS_Store
