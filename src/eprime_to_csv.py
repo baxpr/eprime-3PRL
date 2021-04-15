@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 #
 # Read E-Prime text files and convert to CSV
+#
+# NOTE: Events are no longer sorted in the original order! Must be re-sorted
+# by a timestamp field if the order is important.
 
 import argparse
 import re
