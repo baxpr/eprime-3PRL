@@ -215,8 +215,8 @@ end
 E = [E; origE(~keeps,:)];
 E = sortrows(E,'Trial');
 
-report = E(:,{'Trial','TrialType','RuleKnowledge','RuleChange','ChosenColor','WinningDeck','Outcome','CorrectResponse', ...
-	'ProbabilisticError'})
+report = E(:,{'Trial','TrialType','RuleKnowledge','RuleChange','ChosenColor', ...
+	'WinningDeck','Outcome','CorrectResponse','ProbabilisticError'})
 writetable(report,'../OUTPUTS/report.csv')
 
 
