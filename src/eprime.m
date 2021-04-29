@@ -217,7 +217,7 @@ E = sortrows(E,'Trial');
 
 report = E(:,{'Trial','TrialType','RuleKnowledge','RuleChange','ChosenColor','WinningDeck','Outcome','CorrectResponse', ...
 	'ProbabilisticError'})
-writetable(report,'report.csv')
+writetable(report,'../OUTPUTS/report.csv')
 
 
 E(1:5,{
