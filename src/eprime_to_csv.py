@@ -52,6 +52,7 @@ def main():
         '\*\*\* LogFrame End \*\*\*'
         ,re.DOTALL)
     match_frame = re.findall(expr_frame,match_main.group('body'))
+    print(len(match_frame))
 
     # Parse log frames into fields and values, reorganize into data frame
     parsed_frames = pandas.DataFrame(dict(parsed_hdr),index=[0])
