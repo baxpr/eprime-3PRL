@@ -13,7 +13,8 @@ eprime = readtable(eprime_csv);
 % which comes from cols G-J of HGF_Input sheet of ???_template.xlsx
 % which comes from
 %    input_vector column D of ???_template.xlsx
-%       where did that come from? Entered by hand based on Raw Data N?
+%       where did that come from? Entered by hand based on Raw Data N, 
+%       left = 1 / middle = 2 / right = 3 ?
 %    and Raw Data P.
 %
 % Raw Data N = left/middle/right ChosenColor
