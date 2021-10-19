@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 #
 # Read E-Prime text files and convert to CSV
-#
-# NOTE: Events are no longer sorted in the original order! Must be re-sorted
-# by a timestamp field if the order is important.
 
 import argparse
 import re
@@ -63,7 +60,9 @@ def main():
         parsed_frames = parsed_frames.append(parsed_frame)
 
     # Sort by level for pretty
-    parsed_frames = parsed_frames.sort_values(axis=0,by='Level')
+    # NOTE: If done, events are no longer sorted in the original order! Must be re-sorted
+    # by a timestamp field if the order is important.
+    #parsed_frames = parsed_frames.sort_values(axis=0,by='Level')
 
     # Write to CSV
     parsed_frames.to_csv(out_csv)
