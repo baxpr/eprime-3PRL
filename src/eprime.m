@@ -97,12 +97,15 @@ E.ProbabilisticError = 1 * ...
 
 % Initialize
 E.Trial = (1:height(E))';
+E.Run = nan(height(E),1);
 E.RuleKnowledge(:) = {' '};
 E.TrialType(:) = {' '};
 E.NoResponse = 1 * cellfun(@isempty,E.ChosenColor);
 E.Switch(:) = {' '};
 E.WinSwitch(:) = {' '};
 E.WinStay(:) = {' '};
+E.LoseSwitch(:) = {' '};
+E.LoseStay(:) = {' '};
 E.PreviousWinningDeck(:) = {' '};
 
 % How many rule changes?
@@ -135,7 +138,21 @@ for h = 2:height(E)
 	if strcmp(E.Outcome{h-1},'Win') & strcmp(E.Switch{h},'Stay')
 		E.WinStay{h} = 'WinStay';
 	end
+	if strcmp(E.Outcome{h-1},'Lose') & strcmp(E.Switch{h},'Switch')
+		E.LoseSwitch{h} = 'LoseSwitch';
+	end
+	if strcmp(E.Outcome{h-1},'Lose') & strcmp(E.Switch{h},'Stay')
+		E.LoseStay{h} = 'LoseStay';
+	end
+
 end	
+
+
+%% FMRI sections
+E.Run(E.Play_Sample>=  1 & E.Play_Sample<= 40) = 1;
+E.Run(E.Play_Sample>= 41 & E.Play_Sample<= 80) = 2;
+E.Run(E.Play_Sample>= 81 & E.Play_Sample<=120) = 3;
+E.Run(E.Play_Sample>=121 & E.Play_Sample<=160) = 4;
 
 
 %% Update, 5 May
@@ -278,8 +295,10 @@ end
 E = [E; origE(~keeps,:)];
 E = sortrows(E,'Trial');
 
-report = E(:,{'Trial','TrialType', ...
-	'RuleChange','TotalRuleChanges','Switch','WinSwitch','WinStay','ChosenColor', ...
+report = E(:,{'Run','Trial','Play_Sample','TrialType', ...
+	'RuleChange','TotalRuleChanges','Switch', ...
+	'WinSwitch','WinStay','LoseSwitch','LoseStay',...
+	'ChosenColor', ...
 	'WinningDeck','Outcome','PreviousWinningDeck','RuleKnowledge', ...
 	'T1_TrialStart','T5_TrialEnd', ...
 	'CorrectResponse','ProbabilisticError'})

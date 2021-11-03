@@ -19,3 +19,6 @@ eprime = readtable(eprime_csv);
 %
 % Raw Data N = left/middle/right ChosenColor
 % Raw Data P = win (1) / lose (0)
+
+% Looks like our "input" / "choices" is probably a categorical coding of
+% the ChosenProb field in the eprime data.
