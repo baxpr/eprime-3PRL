@@ -5,7 +5,6 @@
 %  PreRunFixation.OnsetTime
 %  PreRunFixation.OffsetTime
 
-
 % Load edat
 Eo = readtable(eprime_csv);
 
@@ -27,12 +26,52 @@ E.WinStay(:) = {' '};
 E.LoseSwitch(:) = {' '};
 E.LoseStay(:) = {' '};
 
+
 % Drop non-response trials
 keeps = E.NoResponse==0;
 E.TrialType(~keeps) = {'NoResponse'};
-
 origE = E;
 E = E(keeps,:);
+
+
+% Trial timing
+% T1_TrialStart
+%    + GameScreen_RT
+% T2_Response          
+%    + ISI
+% T2b_CardFlipOnset
+% T3_FeedbackOnset
+% T4_FeedbackOffset
+%    + ITI
+% T5_TrialEnd
+%
+%     T1_TrialStart                  0
+%     T2_Response           337 - 1890  ms after T1   (1553)  *
+%     T2b_CardFlipOnset    2045 - 6089                (4044)  **
+%     T3_FeedbackOnset      133 -  184                (  51)
+%     T4_FeedbackOffset    1016 - 1034                (  18)
+%     T5_TrialEnd           900 - 8900                (8000)  **
+%
+% The next T1 is consistently 100ms after T5, so T5 is redundant. T2b-T3-T4
+% are always together so no split there. So model T1 and T2b? That is a
+% cue/response-then-feedback separation, although there is only a 4 sec
+% variation in timing. See fmri-testrun/SPM.mat SPM.xX.X for example of
+% what this looks like
+
+% MainTasks:
+%    WaitForScanner_OffsetTime       454819
+%    Next PreRunFixation_OnsetTime   456153  (+1334 from offset)
+%    Next T1_TrialStart              462170  (+7351 from offset)
+%
+%    WaitForScanner_OffsetTime       968890
+%    Next PreRunFixation_OnsetTime   970227  (+1337 from offset)
+%    Next T1_TrialStart              976244  (+7354 from offset)
+%
+%    WaitForScanner_OffsetTime      1412017
+%    Next PreRunFixation_OnsetTime  1413351  (+1334 from offset)
+%    Next T1_TrialStart             1419368  (+7351 from offset)
+%
+
 
 
 %% Switch/stay
