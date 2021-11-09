@@ -82,33 +82,43 @@ E = E(keeps,:);
 %% Switch/stay
 % The trial AFTER the win where they gave the switched response is the
 % win-switch trial.
-for h = 2:height(E)
-	if strcmp(E.ChosenColor{h},E.ChosenColor{h-1})
-		E.Switch{h} = 'Stay';
-	else
-		E.Switch{h} = 'Switch';
+%
+% We need to account for the breaks between runs - don't count across runs
+for r = [1 2 3 4]
+	inds = find(E.Run==r);
+	
+	E.TrialType{inds(1)} = 'InitialTrial';
+	
+	for h = 2:length(inds)
+		if strcmp(E.ChosenColor{inds(h)},E.ChosenColor{inds(h)-1})
+			E.Switch{inds(h)} = 'Stay';
+		else
+			E.Switch{inds(h)} = 'Switch';
+		end
 	end
-end
-
-for h = 2:height(E)
-	if strcmp(E.Outcome{h-1},'Win') & strcmp(E.Switch{h},'Switch')
-		E.WinSwitch{h} = 'WinSwitch';
-		E.TrialType{h} = 'WinSwitch';
-	end
-	if strcmp(E.Outcome{h-1},'Win') & strcmp(E.Switch{h},'Stay')
-		E.WinStay{h} = 'WinStay';
-		E.TrialType{h} = 'WinStay';
-	end
-	if strcmp(E.Outcome{h-1},'Lose') & strcmp(E.Switch{h},'Switch')
-		E.LoseSwitch{h} = 'LoseSwitch';
-		E.TrialType{h} = 'LoseSwitch';
-	end
-	if strcmp(E.Outcome{h-1},'Lose') & strcmp(E.Switch{h},'Stay')
-		E.LoseStay{h} = 'LoseStay';
-		E.TrialType{h} = 'LoseStay';
+	
+	for h = 2:length(inds)
+		if strcmp(E.Outcome{inds(h)-1},'Win') & strcmp(E.Switch{inds(h)},'Switch')
+			E.WinSwitch{inds(h)} = 'WinSwitch';
+			E.TrialType{inds(h)} = 'WinSwitch';
+		end
+		if strcmp(E.Outcome{inds(h)-1},'Win') & strcmp(E.Switch{inds(h)},'Stay')
+			E.WinStay{inds(h)} = 'WinStay';
+			E.TrialType{inds(h)} = 'WinStay';
+		end
+		if strcmp(E.Outcome{inds(h)-1},'Lose') & strcmp(E.Switch{inds(h)},'Switch')
+			E.LoseSwitch{inds(h)} = 'LoseSwitch';
+			E.TrialType{inds(h)} = 'LoseSwitch';
+		end
+		if strcmp(E.Outcome{inds(h)-1},'Lose') & strcmp(E.Switch{inds(h)},'Stay')
+			E.LoseStay{inds(h)} = 'LoseStay';
+			E.TrialType{inds(h)} = 'LoseStay';
+		end
+		
 	end
 	
 end
+
 
 %% Compute summaries per run, ignoring non-response trials
 summary = table();
