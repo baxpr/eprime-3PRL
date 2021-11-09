@@ -84,7 +84,6 @@ end
 
 
 
-
 %% Drop non-response trials temporarily to facilitate some computations
 keeps = E.NoResponse==0;
 E.TrialType(~keeps) = {'NoResponse'};
