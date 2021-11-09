@@ -160,6 +160,11 @@ for r = [1 2 3 4]
 		sum(strcmp(E.Outcome(inds),'Lose') & ...
 		ismember(E.ChosenProb(inds),{'Deck10','Deck20','Deck40','Deck50'}));
 	
+	% But for counting non-response trials we have to look at the original
+	% full dataset
+	summary.(['Run' num2str(r) '_NonResponses']) = ...
+		sum(strcmp(origE.TrialType(origE.Run==r),'NoResponse'));
+	
 end
 
 writetable(summary,'../OUTPUTS/summary.csv')
