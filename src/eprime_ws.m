@@ -162,6 +162,9 @@ for r = [1 2 3 4]
 	
 end
 
+writetable(summary,'../OUTPUTS/summary.csv')
+
+
 %% Restore non-response trials
 E = [E; origE(~keeps,:)];
 E = sortrows(E,'Trial');
