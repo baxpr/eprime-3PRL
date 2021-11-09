@@ -26,6 +26,11 @@ E.WinStay(:) = {' '};
 E.LoseSwitch(:) = {' '};
 E.LoseStay(:) = {' '};
 
+% FMRI sections
+E.Run(E.Play_Sample>=  1 & E.Play_Sample<= 40) = 1;
+E.Run(E.Play_Sample>= 41 & E.Play_Sample<= 80) = 2;
+E.Run(E.Play_Sample>= 81 & E.Play_Sample<=120) = 3;
+E.Run(E.Play_Sample>=121 & E.Play_Sample<=160) = 4;
 
 % Drop non-response trials
 keeps = E.NoResponse==0;
@@ -37,7 +42,7 @@ E = E(keeps,:);
 % Trial timing
 % T1_TrialStart
 %    + GameScreen_RT
-% T2_Response          
+% T2_Response
 %    + ISI
 % T2b_CardFlipOnset
 % T3_FeedbackOnset
@@ -102,23 +107,68 @@ for h = 2:height(E)
 		E.LoseStay{h} = 'LoseStay';
 		E.TrialType{h} = 'LoseStay';
 	end
+	
+end
 
-end	
+%% Compute summaries per run, ignoring non-response trials
+summary = table();
+for r = [1 2 3 4]
+	inds = E.Run==r;
+	
+	summary.(['Run' num2str(r) '_AvgRT']) = ...
+		mean(E.GameScreen_RT(inds));
+	
+	summary.(['Run' num2str(r) '_EarnedOverall']) = ...
+		E.EarnedOverall(find(inds,1,'last'));
+	
+	summary.(['Run' num2str(r) '_Reversals']) = ...
+		sum(E.RuleChange(inds));
+	
+	summary.(['Run' num2str(r) '_WinStay']) = ...
+		sum(strcmp(E.TrialType(inds),'WinStay'));
+	summary.(['Run' num2str(r) '_WinSwitch']) = ...
+		sum(strcmp(E.TrialType(inds),'WinSwitch'));
+	summary.(['Run' num2str(r) '_LoseStay']) = ...
+		sum(strcmp(E.TrialType(inds),'LoseStay'));
+	summary.(['Run' num2str(r) '_LoseSwitch']) = ...
+		sum(strcmp(E.TrialType(inds),'LoseSwitch'));
+	
+	summary.(['Run' num2str(r) '_WinStayPct']) = ...
+		100 * summary.(['Run' num2str(r) '_WinStay']) / ...
+		(summary.(['Run' num2str(r) '_WinStay']) + ...
+		summary.(['Run' num2str(r) '_WinSwitch']) );
+	
+	summary.(['Run' num2str(r) '_WinSwitchPct']) = ...
+		100 * summary.(['Run' num2str(r) '_WinSwitch']) / ...
+		(summary.(['Run' num2str(r) '_WinStay']) + ...
+		summary.(['Run' num2str(r) '_WinSwitch']) );
+	
+	summary.(['Run' num2str(r) '_LoseStayPct']) = ...
+		100 * summary.(['Run' num2str(r) '_LoseStay']) / ...
+		(summary.(['Run' num2str(r) '_LoseStay']) + ...
+		summary.(['Run' num2str(r) '_LoseSwitch']) );
+	
+	summary.(['Run' num2str(r) '_LoseSwitchPct']) = ...
+		100 * summary.(['Run' num2str(r) '_LoseSwitch']) / ...
+		(summary.(['Run' num2str(r) '_LoseStay']) + ...
+		summary.(['Run' num2str(r) '_LoseSwitch']) );
+	
+	summary.(['Run' num2str(r) '_ProbabilisticLoss']) = ...
+		sum(strcmp(E.Outcome(inds),'Lose') & ...
+		ismember(E.ChosenProb(inds),{'Deck80','Deck90'}));
+	summary.(['Run' num2str(r) '_SubOptimalDeckLoss']) = ...
+		sum(strcmp(E.Outcome(inds),'Lose') & ...
+		ismember(E.ChosenProb(inds),{'Deck10','Deck20','Deck40','Deck50'}));
+	
+end
 
-
-% Restore non-response trials
+%% Restore non-response trials
 E = [E; origE(~keeps,:)];
 E = sortrows(E,'Trial');
 
-% FMRI sections
-E.Run(E.Play_Sample>=  1 & E.Play_Sample<= 40) = 1;
-E.Run(E.Play_Sample>= 41 & E.Play_Sample<= 80) = 2;
-E.Run(E.Play_Sample>= 81 & E.Play_Sample<=120) = 3;
-E.Run(E.Play_Sample>=121 & E.Play_Sample<=160) = 4;
-
 
 % report
-% 	
+%
 report = E(:,{'Run','Trial','Play_Sample','TrialType', ...
 	'Switch', ...
 	'WinSwitch','WinStay','LoseSwitch','LoseStay',...
@@ -126,16 +176,6 @@ report = E(:,{'Run','Trial','Play_Sample','TrialType', ...
 	'WinningDeck','Outcome', ...
 	'T1_TrialStart','T5_TrialEnd'})
 writetable(report,'../OUTPUTS/report.csv')
-
-
-E(1:5,{
-	'GameScreen_OnsetTime'
-	'Slide0_OnsetTime'
-	'T2b_CardFlipOnset'
-	'ShowResult_OnsetTime'
-	'Fixation1_OnsetTime'
-	'T5_TrialEnd'
-	})
 
 % Use these labels, they're easier to understand
 E(1:5,{
