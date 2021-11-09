@@ -32,12 +32,6 @@ E.Run(E.Play_Sample>= 41 & E.Play_Sample<= 80) = 2;
 E.Run(E.Play_Sample>= 81 & E.Play_Sample<=120) = 3;
 E.Run(E.Play_Sample>=121 & E.Play_Sample<=160) = 4;
 
-% Drop non-response trials
-keeps = E.NoResponse==0;
-E.TrialType(~keeps) = {'NoResponse'};
-origE = E;
-E = E(keeps,:);
-
 
 % Trial timing
 % T1_TrialStart
@@ -75,8 +69,27 @@ E = E(keeps,:);
 %    WaitForScanner_OffsetTime      1412017
 %    Next PreRunFixation_OnsetTime  1413351  (+1334 from offset)
 %    Next T1_TrialStart             1419368  (+7351 from offset)
-%
 
+% Get our WaitForScanner_OffsetTime. We are missing this for Run 1 at
+% present
+E.T1_TrialStart_fMRI(E.Run==1) = nan;
+E.T2b_CardFlipOnset_fMRI(E.Run==1) = nan;
+offsets = sort(Eo.WaitForScanner_OffsetTime(strcmp(Eo.Procedure,'MainTask')));
+for r = [2 3 4]
+	E.T1_TrialStart_fMRIsec(E.Run==r) = ...
+		(E.T1_TrialStart(E.Run==r) - offsets(r-1)) / 1000;
+	E.T2b_CardFlipOnset_fMRIsec(E.Run==r) = ...
+		(E.T2b_CardFlipOnset(E.Run==r) - offsets(r-1)) / 1000;
+end
+
+
+
+
+%% Drop non-response trials temporarily to facilitate some computations
+keeps = E.NoResponse==0;
+E.TrialType(~keeps) = {'NoResponse'};
+origE = E;
+E = E(keeps,:);
 
 
 %% Switch/stay
@@ -187,12 +200,12 @@ E = sortrows(E,'Trial');
 
 % report
 %
-report = E(:,{'Run','Trial','Play_Sample','TrialType', ...
+report = E(:,{'Run','Play_Sample','TrialType', ...
 	'Switch', ...
 	'WinSwitch','WinStay','LoseSwitch','LoseStay',...
-	'ChosenColor', ...
+	'ChosenColor','ChosenProb', ...
 	'WinningDeck','Outcome', ...
-	'T1_TrialStart','T5_TrialEnd'})
+	'T1_TrialStart_fMRIsec','T2b_CardFlipOnset_fMRIsec'})
 writetable(report,'../OUTPUTS/report.csv')
 
 % Use these labels, they're easier to understand
