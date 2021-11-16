@@ -1,9 +1,8 @@
+function analyze_eprime(eprime_csv,out_dir)
+
 %% Win/switch oriented eprime parsing
 
-% For timing vs scanner, looks like we reference
-%  Procedure 'MainTask'
-%  PreRunFixation.OnsetTime
-%  PreRunFixation.OffsetTime
+warning('off','MATLAB:table:ModifiedAndSavedVarnames');
 
 % Load edat
 Eo = readtable(eprime_csv);
@@ -15,7 +14,10 @@ E = Eo(strcmp(Eo.Procedure,'Bet'),:);
 [~,ind] = sort(E.Fixation1_OnsetTime);
 E = E(ind,:);
 
-% Initialize
+% Initialize output data
+E.RT = E.GameScreen_RT;
+E.RT(E.RT==0) = nan;
+E.Outcome(strcmp(E.Outcome,'?')) = {''};
 E.Trial = (1:height(E))';
 E.Run = nan(height(E),1);
 E.TrialType(:) = {' '};
@@ -25,15 +27,27 @@ E.WinSwitch(:) = {' '};
 E.WinStay(:) = {' '};
 E.LoseSwitch(:) = {' '};
 E.LoseStay(:) = {' '};
+E.ProbabilisticLoss(:) = nan(height(E),1);
+E.SubOptimalDeckLoss(:) = nan(height(E),1);
 
-% FMRI sections
+% FMRI sections (four runs) and verify
 E.Run(E.Play_Sample>=  1 & E.Play_Sample<= 40) = 1;
 E.Run(E.Play_Sample>= 41 & E.Play_Sample<= 80) = 2;
 E.Run(E.Play_Sample>= 81 & E.Play_Sample<=120) = 3;
 E.Run(E.Play_Sample>=121 & E.Play_Sample<=160) = 4;
 
+if ...
+		(sum(E.Run==1)~=40) || ...
+		(sum(E.Run==2)~=40) || ...
+		(sum(E.Run==3)~=40) || ...
+		(sum(E.Run==4)~=40)
+	error('Found other than 40 trials per run: %d %d %d %d', ...
+		sum(E.Run==1),sum(E.Run==2),sum(E.Run==3),sum(E.Run==4) );
+end
 
-% Trial timing
+
+	
+%% Trial timing  (Example from one run here)
 % T1_TrialStart
 %    + GameScreen_RT
 % T2_Response
@@ -129,6 +143,11 @@ for r = [1 2 3 4]
 		
 	end
 	
+	E.ProbabilisticLoss = strcmp(E.Outcome,'Lose') & ...
+		ismember(E.ChosenProb,{'Deck80','Deck90'});
+	E.SubOptimalDeckLoss = strcmp(E.Outcome,'Lose') & ...
+		ismember(E.ChosenProb,{'Deck10','Deck20','Deck40','Deck50'});
+
 end
 
 
@@ -138,7 +157,7 @@ for r = [1 2 3 4]
 	inds = E.Run==r;
 	
 	summary.(['Run' num2str(r) '_AvgRT']) = ...
-		mean(E.GameScreen_RT(inds));
+		mean(E.RT(inds));
 	
 	summary.(['Run' num2str(r) '_EarnedOverall']) = ...
 		E.EarnedOverall(find(inds,1,'last'));
@@ -176,11 +195,9 @@ for r = [1 2 3 4]
 		summary.(['Run' num2str(r) '_LoseSwitch']) );
 	
 	summary.(['Run' num2str(r) '_ProbabilisticLoss']) = ...
-		sum(strcmp(E.Outcome(inds),'Lose') & ...
-		ismember(E.ChosenProb(inds),{'Deck80','Deck90'}));
+		sum(E.ProbabilisticLoss(inds));
 	summary.(['Run' num2str(r) '_SubOptimalDeckLoss']) = ...
-		sum(strcmp(E.Outcome(inds),'Lose') & ...
-		ismember(E.ChosenProb(inds),{'Deck10','Deck20','Deck40','Deck50'}));
+		sum(E.SubOptimalDeckLoss(inds));
 	
 	% But for counting non-response trials we have to look at the original
 	% full dataset
@@ -189,7 +206,7 @@ for r = [1 2 3 4]
 	
 end
 
-writetable(summary,'../OUTPUTS/summary.csv')
+writetable(summary,fullfile(out_dir,'eprime_summary.csv'));
 
 
 %% Restore non-response trials
@@ -199,27 +216,13 @@ E = sortrows(E,'Trial');
 
 % report
 %
-report = E(:,{'Run','Play_Sample','TrialType', ...
+report = E(:,{'Run','Play_Sample','TrialType', 'RT', ...
 	'Switch', ...
 	'WinSwitch','WinStay','LoseSwitch','LoseStay',...
 	'ChosenColor','ChosenProb', ...
-	'WinningDeck','Outcome', ...
-	'T1_TrialStart_fMRIsec','T2b_CardFlipOnset_fMRIsec'})
-writetable(report,'../OUTPUTS/report.csv')
-
-% Use these labels, they're easier to understand
-E(1:5,{
-	'T1_TrialStart'
-	'T2_Response'
-	'T2b_CardFlipOnset'
-	'T3_FeedbackOnset'
-	'T4_FeedbackOffset'
-	'T5_TrialEnd'
-	'GameScreen_RT'
-	})
-
-% Regressor for T3_FeedbackOnset for the model (the feedback)
-% Compare vs T2_Response in terms of predicted HRF
+	'WinningDeck','Outcome','ProbabilisticLoss','SubOptimalDeckLoss', ...
+	'T1_TrialStart_fMRIsec','T2b_CardFlipOnset_fMRIsec'});
+writetable(report,fullfile(out_dir,'eprime_report.csv'));
 
 
 
