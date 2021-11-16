@@ -105,6 +105,13 @@ origE = E;
 E = E(keeps,:);
 
 
+%% Loss types
+E.ProbabilisticLoss = strcmp(E.Outcome,'Lose') & ...
+	ismember(E.ChosenProb,{'Deck80','Deck90'});
+E.SubOptimalDeckLoss = strcmp(E.Outcome,'Lose') & ...
+	ismember(E.ChosenProb,{'Deck10','Deck20','Deck40','Deck50'});
+
+
 %% Switch/stay
 % The trial AFTER the win where they gave the switched response is the
 % win-switch trial.
@@ -140,13 +147,7 @@ for r = [1 2 3 4]
 			E.LoseStay{inds(h)} = 'LoseStay';
 			E.TrialType{inds(h)} = 'LoseStay';
 		end
-		
 	end
-	
-	E.ProbabilisticLoss = strcmp(E.Outcome,'Lose') & ...
-		ismember(E.ChosenProb,{'Deck80','Deck90'});
-	E.SubOptimalDeckLoss = strcmp(E.Outcome,'Lose') & ...
-		ismember(E.ChosenProb,{'Deck10','Deck20','Deck40','Deck50'});
 
 end
 
