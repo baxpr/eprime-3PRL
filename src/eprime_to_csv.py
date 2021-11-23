@@ -24,6 +24,7 @@ def main():
         out_csv = args.outcsv
 
     # Read entire file into a string, eliminating nulls
+    #with open(args.eprime_txt) as f:
     with open(args.eprime_txt,encoding='utf-16') as f:
         txt = f.read().replace(u'\x00','')
 
