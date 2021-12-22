@@ -2,114 +2,97 @@ function analyze_eprime(eprime_csv,out_dir)
 
 %% Win/switch oriented eprime parsing
 
+% We know this and we don't care. We know what the modified varnames are
+% and they are being used in the code
 warning('off','MATLAB:table:ModifiedAndSavedVarnames');
 
-% Load edat
-Eo = readtable(eprime_csv);
+% Read dates the US way
+opts = detectImportOptions(eprime_csv);
+opts = setvaropts(opts,'SessionStartDateTimeUtc','InputFormat','MM/dd/uuuu hh:mm:ss aa');
 
-% MainTask trials only
-E = Eo(strcmp(Eo.Procedure,'Bet'),:);
+% Load the edat
+fprintf('Eprime file: %s\n',eprime_csv);
+Efull = readtable(eprime_csv,opts);
 
-% Sort by Fixation1_OnsetTime
-[~,ind] = sort(E.Fixation1_OnsetTime);
-E = E(ind,:);
+% Actual card trials are the 'Bet' subset
+Ebet = Efull(strcmp(Efull.Procedure,'Bet'),:);
+
+% Sort trials by Fixation1_OnsetTime (should already be sorted, but just in
+% case)
+[~,ind] = sort(Ebet.Fixation1_OnsetTime);
+Ebet = Ebet(ind,:);
 
 % Initialize output data
-E.RT = E.GameScreen_RT;
-E.RT(E.RT==0) = nan;
-E.Outcome(strcmp(E.Outcome,'?')) = {''};
-E.Trial = (1:height(E))';
-E.Run = nan(height(E),1);
-E.TrialType(:) = {' '};
-E.NoResponse = 1 * cellfun(@isempty,E.ChosenColor);
-E.Switch(:) = {' '};
-E.WinSwitch(:) = {' '};
-E.WinStay(:) = {' '};
-E.LoseSwitch(:) = {' '};
-E.LoseStay(:) = {' '};
-E.ProbabilisticLoss(:) = nan(height(E),1);
-E.SubOptimalDeckLoss(:) = nan(height(E),1);
+Ebet.RT = Ebet.GameScreen_RT;
+Ebet.RT(Ebet.RT==0) = nan;
+Ebet.Outcome(strcmp(Ebet.Outcome,'?')) = {''};
+Ebet.Trial = (1:height(Ebet))';
+Ebet.Run = nan(height(Ebet),1);
+Ebet.TrialType(:) = {' '};
+Ebet.NoResponse = 1 * cellfun(@isempty,Ebet.ChosenColor);
+Ebet.Switch(:) = {' '};
+Ebet.WinSwitch(:) = {' '};
+Ebet.WinStay(:) = {' '};
+Ebet.LoseSwitch(:) = {' '};
+Ebet.LoseStay(:) = {' '};
+Ebet.ProbabilisticLoss(:) = nan(height(Ebet),1);
+Ebet.SubOptimalDeckLoss(:) = nan(height(Ebet),1);
 
-% FMRI sections (four runs) and verify
-E.Run(E.Play_Sample>=  1 & E.Play_Sample<= 40) = 1;
-E.Run(E.Play_Sample>= 41 & E.Play_Sample<= 80) = 2;
-E.Run(E.Play_Sample>= 81 & E.Play_Sample<=120) = 3;
-E.Run(E.Play_Sample>=121 & E.Play_Sample<=160) = 4;
+% Label FMRI sections (four runs) and verify
+Ebet.Run(Ebet.Play_Sample>=  1 & Ebet.Play_Sample<= 40) = 1;
+Ebet.Run(Ebet.Play_Sample>= 41 & Ebet.Play_Sample<= 80) = 2;
+Ebet.Run(Ebet.Play_Sample>= 81 & Ebet.Play_Sample<=120) = 3;
+Ebet.Run(Ebet.Play_Sample>=121 & Ebet.Play_Sample<=160) = 4;
 
 if ...
-		(sum(E.Run==1)~=40) || ...
-		(sum(E.Run==2)~=40) || ...
-		(sum(E.Run==3)~=40) || ...
-		(sum(E.Run==4)~=40)
+		(sum(Ebet.Run==1)~=40) || ...
+		(sum(Ebet.Run==2)~=40) || ...
+		(sum(Ebet.Run==3)~=40) || ...
+		(sum(Ebet.Run==4)~=40)
 	error('Found other than 40 trials per run: %d %d %d %d', ...
-		sum(E.Run==1),sum(E.Run==2),sum(E.Run==3),sum(E.Run==4) );
+		sum(Ebet.Run==1),sum(Ebet.Run==2),sum(Ebet.Run==3),sum(Ebet.Run==4) );
 end
 
 
-	
-%% Trial timing  (Example from one run here)
-% T1_TrialStart
-%    + GameScreen_RT
-% T2_Response
-%    + ISI
-% T2b_CardFlipOnset
-% T3_FeedbackOnset
-% T4_FeedbackOffset
-%    + ITI
-% T5_TrialEnd
-%
-%     T1_TrialStart                  0
-%     T2_Response           337 - 1890  ms after T1   (1553)  *
-%     T2b_CardFlipOnset    2045 - 6089                (4044)  **
-%     T3_FeedbackOnset      133 -  184                (  51)
-%     T4_FeedbackOffset    1016 - 1034                (  18)
-%     T5_TrialEnd           900 - 8900                (8000)  **
-%
-% The next T1 is consistently 100ms after T5, so T5 is redundant. T2b-T3-T4
-% are always together so no split there. So model T1 and T2b? That is a
-% cue/response-then-feedback separation, although there is only a 4 sec
-% variation in timing. See fmri-testrun/SPM.mat SPM.xX.X for example of
-% what this looks like
+%% fMRI timing offsets
+% Get our fMRI timing offsets from MainTask entries. If WaitForScanner_RESP
+% not recorded, we have an old format of eprime task and have to make some
+% assumptions, namely the first three WaitForScanner_OffsetTime correspond
+% to the first fMRI volume of the NEXT run, and for the first fMRI run we
+% impute the expected 6 sec delay (approximate, but accurate enough).
+% Otherwise we can just grab the offset times directly.
+Emain = Efull(strcmp(Efull.Procedure,'MainTask'),:);
+offsets = sort(Emain.WaitForScanner_OffsetTime);
 
-% MainTasks:
-%    WaitForScanner_OffsetTime       454819
-%    Next PreRunFixation_OnsetTime   456153  (+1334 from offset)
-%    Next T1_TrialStart              462170  (+7351 from offset)
-%
-%    WaitForScanner_OffsetTime       968890
-%    Next PreRunFixation_OnsetTime   970227  (+1337 from offset)
-%    Next T1_TrialStart              976244  (+7354 from offset)
-%
-%    WaitForScanner_OffsetTime      1412017
-%    Next PreRunFixation_OnsetTime  1413351  (+1334 from offset)
-%    Next T1_TrialStart             1419368  (+7351 from offset)
-
-% Get our WaitForScanner_OffsetTime. We are missing this for Run 1 at
-% present
-E.T1_TrialStart_fMRI(E.Run==1) = nan;
-E.T2b_CardFlipOnset_fMRI(E.Run==1) = nan;
-offsets = sort(Eo.WaitForScanner_OffsetTime(strcmp(Eo.Procedure,'MainTask')));
-for r = [2 3 4]
-	E.T1_TrialStart_fMRIsec(E.Run==r) = ...
-		(E.T1_TrialStart(E.Run==r) - offsets(r-1)) / 1000;
-	E.T2b_CardFlipOnset_fMRIsec(E.Run==r) = ...
-		(E.T2b_CardFlipOnset(E.Run==r) - offsets(r-1)) / 1000;
+if ~ismember('WaitForScanner_RESP',Emain.Properties.VariableNames)
+	fprintf('Old format eprime detected - reassigning offsets accordingly\n');
+	offsets(2:4) = offsets(1:3);
+	offsets(1) = min(Ebet.T1_TrialStart(Ebet.Run==1)) - 6000;
 end
 
+for r = [1 2 3 4]
+	Ebet.Offset_fMRI(Ebet.Run==r) = offsets(r);
+	Ebet.T1_TrialStart_fMRIsec(Ebet.Run==r) = ...
+		(Ebet.T1_TrialStart(Ebet.Run==r) - offsets(r)) / 1000;
+	Ebet.T2b_CardFlipOnset_fMRIsec(Ebet.Run==r) = ...
+		(Ebet.T2b_CardFlipOnset(Ebet.Run==r) - offsets(r)) / 1000;
+	fprintf('Run %d first TrialStart: %0.2f sec\n', ...
+		r,min(Ebet.T1_TrialStart_fMRIsec(Ebet.Run==r)));
+end
 
 
 %% Drop non-response trials temporarily to facilitate some computations
-keeps = E.NoResponse==0;
-E.TrialType(~keeps) = {'NoResponse'};
-origE = E;
-E = E(keeps,:);
+keeps = Ebet.NoResponse==0;
+Ebet.TrialType(~keeps) = {'NoResponse'};
+origE = Ebet;
+Ebet = Ebet(keeps,:);
 
 
 %% Loss types
-E.ProbabilisticLoss = strcmp(E.Outcome,'Lose') & ...
-	ismember(E.ChosenProb,{'Deck80','Deck90'});
-E.SubOptimalDeckLoss = strcmp(E.Outcome,'Lose') & ...
-	ismember(E.ChosenProb,{'Deck10','Deck20','Deck40','Deck50'});
+Ebet.ProbabilisticLoss = strcmp(Ebet.Outcome,'Lose') & ...
+	ismember(Ebet.ChosenProb,{'Deck80','Deck90'});
+Ebet.SubOptimalDeckLoss = strcmp(Ebet.Outcome,'Lose') & ...
+	ismember(Ebet.ChosenProb,{'Deck10','Deck20','Deck40','Deck50'});
 
 
 %% Switch/stay
@@ -118,62 +101,62 @@ E.SubOptimalDeckLoss = strcmp(E.Outcome,'Lose') & ...
 %
 % We need to account for the breaks between runs - don't count across runs
 for r = [1 2 3 4]
-	inds = find(E.Run==r);
+	inds = find(Ebet.Run==r);
 	
-	E.TrialType{inds(1)} = 'InitialTrial';
+	Ebet.TrialType{inds(1)} = 'InitialTrial';
 	
 	for h = 2:length(inds)
-		if strcmp(E.ChosenColor{inds(h)},E.ChosenColor{inds(h)-1})
-			E.Switch{inds(h)} = 'Stay';
+		if strcmp(Ebet.ChosenColor{inds(h)},Ebet.ChosenColor{inds(h)-1})
+			Ebet.Switch{inds(h)} = 'Stay';
 		else
-			E.Switch{inds(h)} = 'Switch';
+			Ebet.Switch{inds(h)} = 'Switch';
 		end
 	end
 	
 	for h = 2:length(inds)
-		if strcmp(E.Outcome{inds(h)-1},'Win') & strcmp(E.Switch{inds(h)},'Switch')
-			E.WinSwitch{inds(h)} = 'WinSwitch';
-			E.TrialType{inds(h)} = 'WinSwitch';
+		if strcmp(Ebet.Outcome{inds(h)-1},'Win') & strcmp(Ebet.Switch{inds(h)},'Switch')
+			Ebet.WinSwitch{inds(h)} = 'WinSwitch';
+			Ebet.TrialType{inds(h)} = 'WinSwitch';
 		end
-		if strcmp(E.Outcome{inds(h)-1},'Win') & strcmp(E.Switch{inds(h)},'Stay')
-			E.WinStay{inds(h)} = 'WinStay';
-			E.TrialType{inds(h)} = 'WinStay';
+		if strcmp(Ebet.Outcome{inds(h)-1},'Win') & strcmp(Ebet.Switch{inds(h)},'Stay')
+			Ebet.WinStay{inds(h)} = 'WinStay';
+			Ebet.TrialType{inds(h)} = 'WinStay';
 		end
-		if strcmp(E.Outcome{inds(h)-1},'Lose') & strcmp(E.Switch{inds(h)},'Switch')
-			E.LoseSwitch{inds(h)} = 'LoseSwitch';
-			E.TrialType{inds(h)} = 'LoseSwitch';
+		if strcmp(Ebet.Outcome{inds(h)-1},'Lose') & strcmp(Ebet.Switch{inds(h)},'Switch')
+			Ebet.LoseSwitch{inds(h)} = 'LoseSwitch';
+			Ebet.TrialType{inds(h)} = 'LoseSwitch';
 		end
-		if strcmp(E.Outcome{inds(h)-1},'Lose') & strcmp(E.Switch{inds(h)},'Stay')
-			E.LoseStay{inds(h)} = 'LoseStay';
-			E.TrialType{inds(h)} = 'LoseStay';
+		if strcmp(Ebet.Outcome{inds(h)-1},'Lose') & strcmp(Ebet.Switch{inds(h)},'Stay')
+			Ebet.LoseStay{inds(h)} = 'LoseStay';
+			Ebet.TrialType{inds(h)} = 'LoseStay';
 		end
 	end
-
+	
 end
 
 
 %% Compute summaries per run, ignoring non-response trials
 summary = table();
 for r = [1 2 3 4]
-	inds = E.Run==r;
+	inds = Ebet.Run==r;
 	
 	summary.(['Run' num2str(r) '_AvgRT']) = ...
-		mean(E.RT(inds));
+		mean(Ebet.RT(inds));
 	
 	summary.(['Run' num2str(r) '_EarnedOverall']) = ...
-		E.EarnedOverall(find(inds,1,'last'));
+		Ebet.EarnedOverall(find(inds,1,'last'));
 	
 	summary.(['Run' num2str(r) '_Reversals']) = ...
-		sum(E.RuleChange(inds));
+		sum(Ebet.RuleChange(inds));
 	
 	summary.(['Run' num2str(r) '_WinStay']) = ...
-		sum(strcmp(E.TrialType(inds),'WinStay'));
+		sum(strcmp(Ebet.TrialType(inds),'WinStay'));
 	summary.(['Run' num2str(r) '_WinSwitch']) = ...
-		sum(strcmp(E.TrialType(inds),'WinSwitch'));
+		sum(strcmp(Ebet.TrialType(inds),'WinSwitch'));
 	summary.(['Run' num2str(r) '_LoseStay']) = ...
-		sum(strcmp(E.TrialType(inds),'LoseStay'));
+		sum(strcmp(Ebet.TrialType(inds),'LoseStay'));
 	summary.(['Run' num2str(r) '_LoseSwitch']) = ...
-		sum(strcmp(E.TrialType(inds),'LoseSwitch'));
+		sum(strcmp(Ebet.TrialType(inds),'LoseSwitch'));
 	
 	summary.(['Run' num2str(r) '_WinStayPct']) = ...
 		100 * summary.(['Run' num2str(r) '_WinStay']) / ...
@@ -196,9 +179,9 @@ for r = [1 2 3 4]
 		summary.(['Run' num2str(r) '_LoseSwitch']) );
 	
 	summary.(['Run' num2str(r) '_ProbabilisticLoss']) = ...
-		sum(E.ProbabilisticLoss(inds));
+		sum(Ebet.ProbabilisticLoss(inds));
 	summary.(['Run' num2str(r) '_SubOptimalDeckLoss']) = ...
-		sum(E.SubOptimalDeckLoss(inds));
+		sum(Ebet.SubOptimalDeckLoss(inds));
 	
 	% But for counting non-response trials we have to look at the original
 	% full dataset
@@ -211,18 +194,18 @@ writetable(summary,fullfile(out_dir,'eprime_summary.csv'));
 
 
 %% Restore non-response trials
-E = [E; origE(~keeps,:)];
-E = sortrows(E,'Trial');
+Ebet = [Ebet; origE(~keeps,:)];
+Ebet = sortrows(Ebet,'Trial');
 
 
-% report
-%
-report = E(:,{'Run','Play_Sample','TrialType', 'RT', ...
+%% Save trial-by-trial data
+report = Ebet(:,{'Run','Play_Sample','TrialType', 'RT', ...
 	'Switch', ...
 	'WinSwitch','WinStay','LoseSwitch','LoseStay',...
 	'ChosenColor','ChosenProb', ...
 	'WinningDeck','Outcome','ProbabilisticLoss','SubOptimalDeckLoss', ...
-	'T1_TrialStart_fMRIsec','T2b_CardFlipOnset_fMRIsec'});
+	'Offset_fMRI','T1_TrialStart','T1_TrialStart_fMRIsec', ...
+	'T2b_CardFlipOnset','T2b_CardFlipOnset_fMRIsec'});
 writetable(report,fullfile(out_dir,'eprime_report.csv'));
 
 
