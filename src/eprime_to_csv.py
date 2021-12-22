@@ -25,6 +25,7 @@ def main():
 
     # Read entire file into a string, eliminating nulls
     #with open(args.eprime_txt) as f:
+    print(f'Converting {args.eprime_txt}')
     with open(args.eprime_txt,encoding='utf-16') as f:
         txt = f.read().replace(u'\x00','')
 
@@ -50,7 +51,7 @@ def main():
         '\*\*\* LogFrame End \*\*\*'
         ,re.DOTALL)
     match_frame = re.findall(expr_frame,match_main.group('body'))
-    print(len(match_frame))
+    print(f'Found {len(match_frame)} log frames to convert')
 
     # Parse log frames into fields and values, reorganize into data frame
     parsed_frames = pandas.DataFrame(dict(parsed_hdr),index=[0])
@@ -66,6 +67,7 @@ def main():
     #parsed_frames = parsed_frames.sort_values(axis=0,by='Level')
 
     # Write to CSV
+    print(f'Saving to {out_csv}')
     parsed_frames.to_csv(out_csv)
 
 
