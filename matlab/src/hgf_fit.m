@@ -1,5 +1,5 @@
-function [result1,result2] = hgf_fit(eprime_report)
-% Fit the behavioral model to 
+function [result1,result2] = hgf_fit(eprime_report,out_dir)
+% Fit the behavioral model to eprime trial data
 
 % Load our eprime trials report
 info = readtable(eprime_report);
@@ -44,3 +44,8 @@ result2 = tapas_fitModel( ...
 	sprintf('tapas_hgf_ar1_binary_mab_config_custom(%0.8f,%0.8f)',result1.p_prc.mu_0(2),result1.p_prc.mu_0(3)), ...
 	'tapas_softmax_mu3_config' ...
 	);
+
+% Save outputs in .mat and .csv formats
+
+% Generate plots
+

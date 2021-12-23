@@ -1,4 +1,5 @@
-function analyze_eprime(eprime_csv,fmri_dcm,out_dir,timeoverride)
+function [report_csv,summary_csv] = analyze_eprime( ...
+	eprime_csv,fmri_dcm,out_dir,timeoverride)
 
 % timeoverride = 1 to continue even if eprime and dicom timestamps aren't
 % close enough. Otherwise supply timeoverride = 0.
@@ -232,7 +233,8 @@ for r = [1 2 3 4]
 	
 end
 
-writetable(summary,fullfile(out_dir,'eprime_summary.csv'));
+summary_csv = fullfile(out_dir,'eprime_summary.csv');
+writetable(summary,summary_csv);
 
 
 %% Restore non-response trials
@@ -248,7 +250,8 @@ report = Ebet(:,{'Run','Play_Sample','TrialType', 'RT', ...
 	'WinningDeck','Outcome','ProbabilisticLoss','SubOptimalDeckLoss', ...
 	'Offset_fMRI','T1_TrialStart','T1_TrialStart_fMRIsec', ...
 	'T2b_CardFlipOnset','T2b_CardFlipOnset_fMRIsec'});
-writetable(report,fullfile(out_dir,'eprime_report.csv'));
+report_csv = fullfile(out_dir,'eprime_report.csv');
+writetable(report,report_csv);
 
 
 
