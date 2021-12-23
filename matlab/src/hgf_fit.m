@@ -41,8 +41,8 @@ result1 = tapas_fitModel( ...
 	'tapas_softmax_mu3_config' ...
 	);
 
-% Coding and fit for "hard". Replace mu_0(2) and mu_0(3) with previous half's est
-% parameters
+% Coding and fit for "hard". Replace mu_0(2) and mu_0(3) with previous
+% half's est parameters
 responses2 = nan(sum(inds2),1);
 responses2(strcmp(info.ChosenProb(inds2),'Deck20')) = 1;
 responses2(strcmp(info.ChosenProb(inds2),'Deck40')) = 2;
