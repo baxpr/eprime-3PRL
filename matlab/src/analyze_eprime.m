@@ -1,14 +1,20 @@
-function analyze_eprime(eprime_csv,out_dir)
+function analyze_eprime(eprime_csv,fmri_dcm,out_dir,timeoverride)
 
-%% Win/switch oriented eprime parsing
+% timeoverride = 1 to continue even if eprime and dicom timestamps aren't
+% close enough. Otherwise supply timeoverride = 0.
+
+
+%% Setup
 
 % We know this and we don't care. We know what the modified varnames are
 % and they are being used in the code
 warning('off','MATLAB:table:ModifiedAndSavedVarnames');
 
-% Read dates the US way
+% Turn off autodetecting duration/datetime types for reading some
+% dates/times
 opts = detectImportOptions(eprime_csv);
-opts = setvaropts(opts,'SessionStartDateTimeUtc','InputFormat','MM/dd/uuuu hh:mm:ss aa');
+opts = setvaropts(opts,'SessionStartDateTimeUtc','Type','char');
+opts = setvaropts(opts,'SessionTime','Type','char');
 
 % Load the edat
 fprintf('Eprime file: %s\n',eprime_csv);
@@ -54,13 +60,49 @@ if ...
 end
 
 
+%% Get date and time from the eprime and DICOM to verify eprime/fmri match
+eprime_date = unique(Efull.SessionDate(cellfun(@(x) ~isempty(x),Efull.SessionDate)));
+if numel(eprime_date)~=1
+	error('Found wrong number of unique SessionDate in eprime csv')
+end
+eprime_time = unique(Efull.SessionTime(cellfun(@(x) ~isempty(x),Efull.SessionTime)));
+if numel(eprime_time)~=1
+	error('Found wrong number of unique SessionTime in eprime csv')
+end
+eprime_datetime = datetime([eprime_date{1} ' ' eprime_time{1}], ...
+	'InputFormat','MM-dd-yyyy HH:mm:ss');
+
+dcm = dicominfo(fmri_dcm);
+dcm_datetime = datetime([dcm.ContentDate dcm.ContentTime], ...
+	'InputFormat','yyyyMMddHHmmss.SS');
+
+fprintf('Date and time for\n  Eprime: %s\n   DICOM: %s\n', ...
+	eprime_datetime, dcm_datetime);
+
+if minutes(dcm_datetime - eprime_datetime) < 0
+	if timeoverride==0
+		error('FMRI acquisition began before Eprime')
+	else
+		warning('FMRI acquisition began before Eprime')
+	end
+	elseif minutes(dcm_datetime - eprime_datetime) > 60
+	if timeoverride==0
+		error('FMRI acquisition began more than an hour after Eprime')
+	else
+		warning('FMRI acquisition began more than an hour after Eprime')
+	end
+elseif minutes(dcm_datetime - eprime_datetime) > 10
+	warning('FMRI acquisition began more than 10 minutes after Eprime')
+end
+
+
 %% fMRI timing offsets
 % Get our fMRI timing offsets from MainTask entries. If WaitForScanner_RESP
-% not recorded, we have an old format of eprime task and have to make some
-% assumptions, namely the first three WaitForScanner_OffsetTime correspond
-% to the first fMRI volume of the NEXT run, and for the first fMRI run we
-% impute the expected 6 sec delay (approximate, but accurate enough).
-% Otherwise we can just grab the offset times directly.
+% not recorded, we have an old format of the eprime task and have to make
+% some assumptions, namely the first three WaitForScanner_OffsetTime
+% correspond to the first fMRI volume of the NEXT run, and for the first
+% fMRI run we impute the expected 6 sec delay (approximate, but accurate
+% enough). Otherwise we can just grab the offset times directly.
 Emain = Efull(strcmp(Efull.Procedure,'MainTask'),:);
 offsets = sort(Emain.WaitForScanner_OffsetTime);
 
