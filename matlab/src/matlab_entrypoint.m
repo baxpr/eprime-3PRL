@@ -52,7 +52,7 @@ disp(P.Results)
 	P.Results.out_dir, ...
 	P.Results.timeoverride ...
 	);
-hgf_fit(report_csv,P.Results.out_dir);
+hgf_fit(report_csv,summary_csv,P.Results.out_dir);
 
 
 %% Exit

@@ -1,8 +1,11 @@
-function [result12,result34] = hgf_fit(eprime_report,out_dir)
+function [result12,result34] = hgf_fit(eprime_report,eprime_summary,out_dir)
 % Fit the behavioral model to eprime trial data
 
 % Load our eprime trials report
 info = readtable(eprime_report);
+
+% Load summary data
+summary = readtable(eprime_summary);
 
 % Split by "easy" and "hard" based on fmri run. We will assume the 10/50/90
 % decks in inds1 and the 20/40/80 decks in inds2.
@@ -48,6 +51,19 @@ result34 = tapas_fitModel( ...
 % Save complete outputs in .mat format
 save(fullfile(out_dir,'results.mat'),'result12','result34')
 
+% Store parameter estimates in the summary report
+summary.run12_mu_0_2 = result12.p_prc.mu_0(2);
+summary.run12_mu_0_3 = result12.p_prc.mu_0(3);
+summary.run12_kappa_2 = result12.p_prc.ka(2);
+summary.run12_omega_2 = result12.p_prc.om(2);
+summary.run12_omega_3 = result12.p_prc.om(3);
+
+summary.run34_mu_0_2 = result34.p_prc.mu_0(2);
+summary.run34_mu_0_3 = result34.p_prc.mu_0(3);
+summary.run34_kappa_2 = result34.p_prc.ka(2);
+summary.run34_omega_2 = result34.p_prc.om(2);
+summary.run34_omega_3 = result34.p_prc.om(3);
+
 % Store model trajectory outputs in the trial-by-trial report
 for var = {'mu','sa','muhat','sahat','ud'}
 	for i1 = 1:3
@@ -74,8 +90,9 @@ for var = {'w'}
 end
 
 
-%% Save updated report
+%% Save updated reports
 writetable(info,fullfile(out_dir,'trial_report.csv'));
+writetable(summary,fullfile(out_dir,'full_summary.csv'));
 
 
 % Generate plots? Which traj?
