@@ -45,9 +45,16 @@ result2 = tapas_fitModel( ...
 	'tapas_softmax_mu3_config' ...
 	);
 
-% Save outputs in .mat and .csv formats
+% Save outputs in .mat format
 save(fullfile(out_dir,'results.mat'),'result1','result2')
 
+% Store outputs in the trial-by-trial report
+info.traj_mu_31(inds1) = result1.traj.mu(:,3,1);
+info.traj_mu_31(inds2) = result2.traj.mu(:,3,1);
 
-% Generate plots
+% Save updated report
+writetable(info,fullfile(out_dir,'trial_report.csv'));
+
+
+% Generate plots? Which traj?
 
