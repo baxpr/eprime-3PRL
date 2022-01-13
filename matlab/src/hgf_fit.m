@@ -46,6 +46,8 @@ result2 = tapas_fitModel( ...
 	);
 
 % Save outputs in .mat and .csv formats
+save(fullfile(out_dir,'results.mat'),'result1','result2')
+
 
 % Generate plots
 
