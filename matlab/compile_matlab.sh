@@ -27,13 +27,13 @@ PATH=${MATLAB_ROOT}/bin:${PATH}
 # the matlab/build directory.
 #
 # More info: https://www.mathworks.com/help/compiler/mcc.html
-mcc -m -C -v src/analyze_eprime.m \
+mcc -m -C -v src/matlab_entrypoint.m \
     -N \
     -a src \
     -d bin
 
 # We grant lenient execute permissions to the matlab executable and runscript so
 # we don't have hiccups later.
-chmod go+rx bin/analyze_eprime
-chmod go+rx bin/run_analyze_eprime.sh
+chmod go+rx bin/matlab_entrypoint
+chmod go+rx bin/run_matlab_entrypoint.sh
 
