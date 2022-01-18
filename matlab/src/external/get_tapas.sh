@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 #
 # Copy tapas v5.1.2 source code here so we have a snapshot to use for compiling the matlab
-# executable
+# executable. We only need the HGF subdir - others are not extracted as some have lots of syntax
+# errors that lead to compilation failures if they're in the path
 
 wget https://github.com/translationalneuromodeling/tapas/archive/refs/tags/v5.1.2.tar.gz
-tar -zxf v5.1.2.tar.gz
+
+tar -zxf v5.1.2.tar.gz \
+    tapas-5.1.2/CHANGELOG.md \
+    tapas-5.1.2/CONTRIBUTING.md \
+    tapas-5.1.2/Contributor-License-Agreement.md \
+    tapas-5.1.2/HGF \
+    tapas-5.1.2/LICENSE \
+    tapas-5.1.2/README.md
+
 rm v5.1.2.tar.gz
 
-# Fix a typo in the PhysIO code that blocks compilation
-cp -f tapas_physio_sort_images_by_cardiac_phase.m.fixed \
-    tapas-5.1.2/PhysIO/code/assess/tapas_physio_sort_images_by_cardiac_phase.m
-
-# Remove example code that also has syntax errors
-rm -r tapas-5.1.2/h2gf/example
