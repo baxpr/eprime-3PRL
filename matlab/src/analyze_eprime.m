@@ -14,8 +14,7 @@ warning('off','MATLAB:table:ModifiedAndSavedVarnames');
 % Turn off autodetecting duration/datetime types for reading some
 % dates/times
 opts = detectImportOptions(eprime_csv);
-opts = setvaropts(opts,'SessionStartDateTimeUtc','Type','char');
-opts = setvaropts(opts,'SessionTime','Type','char');
+opts = setvartype(opts,{'SessionTime','SessionStartDateTimeUtc'},'char');
 
 % Load the edat
 fprintf('Eprime file: %s\n',eprime_csv);

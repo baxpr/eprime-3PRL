@@ -1,15 +1,14 @@
 FROM ubuntu:20.04
 
-RUN apt -y update && \
-    apt -y install unzip xvfb openjdk-8-jre python3 && \
-    apt clean && \
-    apt -y autoremove
+RUN apt-get -y update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install wget unzip xvfb openjdk-8-jre python3-pip && \
+    apt-get clean
 
 RUN pip3 install pandas
         
 # Install the MCR
-RUN wget -nv -P /opt https://ssd.mathworks.com/supportfiles/downloads/R2019b/Release/6/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2019b_Update_6_glnxa64.zip \
-     -O mcr_installer.zip && \
+RUN wget -nv https://ssd.mathworks.com/supportfiles/downloads/R2019b/Release/6/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2019b_Update_6_glnxa64.zip \
+     -O /opt/mcr_installer.zip && \
      unzip /opt/mcr_installer.zip -d /opt/mcr_installer && \
     /opt/mcr_installer/install -mode silent -agreeToLicense yes && \
     rm -r /opt/mcr_installer /opt/mcr_installer.zip
