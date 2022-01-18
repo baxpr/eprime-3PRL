@@ -6,7 +6,9 @@ consisting of 4 fMRI runs. Uses a hierarchical gaussian filter model of the lear
 Frässle, S., et al. (2021). 
 TAPAS: An Open-Source Software Package for Translational Neuromodeling and Computational Psychiatry. 
 Frontiers in Psychiatry, 12:680811. 
+
 https://doi.org/10.3389/fpsyt.2021.680811
+
 https://github.com/translationalneuromodeling/tapas
 
 ## Basic usage
