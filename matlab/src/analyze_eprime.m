@@ -62,38 +62,46 @@ end
 
 
 %% Get date and time from the eprime and DICOM to verify eprime/fmri match
-eprime_date = unique(Efull.SessionDate(cellfun(@(x) ~isempty(x),Efull.SessionDate)));
-if numel(eprime_date)~=1
-	error('Found wrong number of unique SessionDate in eprime csv')
-end
-eprime_time = unique(Efull.SessionTime(cellfun(@(x) ~isempty(x),Efull.SessionTime)));
-if numel(eprime_time)~=1
-	error('Found wrong number of unique SessionTime in eprime csv')
-end
-eprime_datetime = datetime([eprime_date{1} ' ' eprime_time{1}], ...
-	'InputFormat','MM-dd-yyyy HH:mm:ss');
+if isempty(fmri_dcm)
+	
+	warning('No fMRI DICOM provided - skipping eprime date/time check')
 
-dcm = dicominfo(fmri_dcm);
-dcm_datetime = datetime([dcm.ContentDate dcm.ContentTime], ...
-	'InputFormat','yyyyMMddHHmmss.SS');
-
-fprintf('Date and time for\n  Eprime: %s\n   DICOM: %s\n', ...
-	eprime_datetime, dcm_datetime);
-
-if minutes(dcm_datetime - eprime_datetime) < 0
-	if timeoverride==0
-		error('FMRI acquisition began before Eprime')
-	else
-		warning('FMRI acquisition began before Eprime')
+else
+	
+	eprime_date = unique(Efull.SessionDate(cellfun(@(x) ~isempty(x),Efull.SessionDate)));
+	if numel(eprime_date)~=1
+		error('Found wrong number of unique SessionDate in eprime csv')
 	end
+	eprime_time = unique(Efull.SessionTime(cellfun(@(x) ~isempty(x),Efull.SessionTime)));
+	if numel(eprime_time)~=1
+		error('Found wrong number of unique SessionTime in eprime csv')
+	end
+	eprime_datetime = datetime([eprime_date{1} ' ' eprime_time{1}], ...
+		'InputFormat','MM-dd-yyyy HH:mm:ss');
+	
+	dcm = dicominfo(fmri_dcm);
+	dcm_datetime = datetime([dcm.ContentDate dcm.ContentTime], ...
+		'InputFormat','yyyyMMddHHmmss.SS');
+	
+	fprintf('Date and time for\n  Eprime: %s\n   DICOM: %s\n', ...
+		eprime_datetime, dcm_datetime);
+	
+	if minutes(dcm_datetime - eprime_datetime) < 0
+		if timeoverride==0
+			error('FMRI acquisition began before Eprime')
+		else
+			warning('FMRI acquisition began before Eprime')
+		end
 	elseif minutes(dcm_datetime - eprime_datetime) > 60
-	if timeoverride==0
-		error('FMRI acquisition began more than an hour after Eprime')
-	else
-		warning('FMRI acquisition began more than an hour after Eprime')
+		if timeoverride==0
+			error('FMRI acquisition began more than an hour after Eprime')
+		else
+			warning('FMRI acquisition began more than an hour after Eprime')
+		end
+	elseif minutes(dcm_datetime - eprime_datetime) > 10
+		warning('FMRI acquisition began more than 10 minutes after Eprime')
 	end
-elseif minutes(dcm_datetime - eprime_datetime) > 10
-	warning('FMRI acquisition began more than 10 minutes after Eprime')
+	
 end
 
 

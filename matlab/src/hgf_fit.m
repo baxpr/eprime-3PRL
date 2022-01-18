@@ -1,4 +1,4 @@
-function [result12,result34] = hgf_fit(eprime_report,eprime_summary,out_dir)
+function [trial_csv,summary_csv] = hgf_fit(eprime_report,eprime_summary,out_dir)
 % Fit the behavioral model to eprime trial data
 
 % Load our eprime trials report
@@ -48,9 +48,6 @@ result34 = tapas_fitModel( ...
 	'tapas_softmax_mu3_config' ...
 	);
 
-% Save complete outputs in .mat format
-save(fullfile(out_dir,'results.mat'),'result12','result34')
-
 % Store parameter estimates in the summary report
 summary.run12_mu_0_2 = result12.p_prc.mu_0(2);
 summary.run12_mu_0_3 = result12.p_prc.mu_0(3);
@@ -90,10 +87,14 @@ for var = {'w'}
 end
 
 
-%% Save updated reports
-writetable(info,fullfile(out_dir,'trial_report.csv'));
-writetable(summary,fullfile(out_dir,'full_summary.csv'));
+% Save complete outputs in .mat format
+save(fullfile(out_dir,'hgf_results.mat'),'result12','result34')
+
+% Save updated reports
+trial_csv = fullfile(out_dir,'trial_report.csv');
+writetable(info,trial_csv);
+summary_csv = fullfile(out_dir,'full_summary.csv');
+writetable(summary,summary_csv);
 
 
-% Generate plots? Which traj?
 

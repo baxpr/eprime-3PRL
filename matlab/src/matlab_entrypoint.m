@@ -20,6 +20,7 @@ P = inputParser;
 addOptional(P,'eprime_csv','')
 
 % We also want a DICOM from the fMRI - used only to compare timestamps.
+% This should be the first DICOM of the first fMRI run.
 addOptional(P,'fmri_dcm','')
 
 % We also take a numerical parameter than can be used to override the
@@ -32,7 +33,7 @@ addOptional(P,'timeoverride','0');
 % When processing runs on XNAT, we generally have the project, subject,
 % session, and scan labels from XNAT available in case we want them. Often
 % the only need for these is to label the QA PDF.
-addOptional(P,'label_info','UNKNOWN SCAN');
+%addOptional(P,'label_info','UNKNOWN SCAN');
 
 % Finally, we need to know where to store the outputs.
 addOptional(P,'out_dir','/OUTPUTS');
@@ -52,7 +53,16 @@ disp(P.Results)
 	P.Results.out_dir, ...
 	P.Results.timeoverride ...
 	);
-hgf_fit(report_csv,summary_csv,P.Results.out_dir);
+[trial_csv,summary_csv] = hgf_fit( ...
+	report_csv, ...
+	summary_csv, ...
+	P.Results.out_dir ...
+	);
+make_pdf( ...
+	trial_csv, ...
+	summary_csv, ...
+	P.Results.out_dir ...
+	)
 
 
 %% Exit
