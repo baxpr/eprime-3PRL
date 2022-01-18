@@ -28,7 +28,6 @@ PATH=${MATLAB_ROOT}/bin:${PATH}
 #
 # More info: https://www.mathworks.com/help/compiler/mcc.html
 mcc -m -C -v src/matlab_entrypoint.m \
-    -N \
     -a src \
     -d bin
 
