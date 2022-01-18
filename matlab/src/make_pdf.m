@@ -60,7 +60,7 @@ ylabel('epsilon')
 legend({'epsilon(2)','epsilon(3)'})
 
 
-% Print to PNG
-print(gcf,'-dpng','-r300',fullfile(out_dir,'report.png'))
-%close(gcf);
+% Print to PDF
+print(gcf,'-dpdf',fullfile(out_dir,'report.pdf'))
+close(gcf);
 
