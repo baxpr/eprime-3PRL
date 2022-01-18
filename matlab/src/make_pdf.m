@@ -41,7 +41,7 @@ disp(pstr)
 set(figH.params_text, 'String', pstr)
 
 % GUIDE wouldn't save these settings for some reason
-set(figH.params_text, 'Font', 'FixedWidth')
+set(figH.params_text, 'FontName', 'FixedWidth')
 set(figH.params_text, 'FontUnits', 'normalized')
 set(figH.params_text, 'FontSize', 0.08)
 set(figH.titletext, 'FontUnits', 'normalized')
