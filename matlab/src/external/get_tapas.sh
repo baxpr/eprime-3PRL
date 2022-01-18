@@ -10,3 +10,6 @@ rm v5.1.2.tar.gz
 # Fix a typo in the PhysIO code that blocks compilation
 cp -f tapas_physio_sort_images_by_cardiac_phase.m.fixed \
     tapas-5.1.2/PhysIO/code/assess/tapas_physio_sort_images_by_cardiac_phase.m
+
+# Remove example code that also has syntax errors
+rm -r tapas-5.1.2/h2gf/example
