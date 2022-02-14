@@ -25,5 +25,8 @@ ENV MATLAB_RUNTIME=/usr/local/MATLAB/MATLAB_Runtime/v97
 # Add pipeline to system path
 ENV PATH /opt/eprime-3PRL/src:/opt/eprime-3PRL/matlab/bin:${PATH}
 
+# Matlab executable must be run now to extract the CTF archive
+RUN run_matlab_entrypoint.sh ${MATLAB_RUNTIME} quit
+
 # Entrypoint
 ENTRYPOINT ["pipeline_entrypoint.sh"]
