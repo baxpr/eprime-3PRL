@@ -6,3 +6,4 @@ local*
 .DS_Store
 *.asv
 testdocker.sh
+src/manual_uploads.csv
