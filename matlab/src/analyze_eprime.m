@@ -1,8 +1,12 @@
 function [report_csv,summary_csv] = analyze_eprime( ...
-	eprime_csv,fmri_dcm,out_dir,timeoverride)
+	eprime_csv,fmri_dcm,out_dir,timeoverride,renumoverride)
 
 % timeoverride = 1 to continue even if eprime and dicom timestamps aren't
 % close enough. Otherwise supply timeoverride = 0.
+%
+% renumoverride = 1 to allow renumbering trials if they are not 1:160. This
+% would happen if eprime.txt files from multiple runs (in/out of scanner)
+% were concatenated. Otherwise supply renumoverride = 0.
 
 
 %% Setup
@@ -20,13 +24,11 @@ opts = setvartype(opts,{'SessionTime','SessionStartDateTimeUtc'},'char');
 fprintf('Eprime file: %s\n',eprime_csv);
 Efull = readtable(eprime_csv,opts);
 
-% Actual card trials are the 'Bet' subset
+% Actual card trials are the 'Bet' subset. NOTE we assume they are
+% correctly sorted (time order) already. This relies on the original
+% eprime.txt file being in time order (which it is) and the trials not
+% getting re-sorted by the regex stuff in eprime_to_csv.py.
 Ebet = Efull(strcmp(Efull.Procedure,'Bet'),:);
-
-% Sort trials by Fixation1_OnsetTime (should already be sorted, but just in
-% case)
-[~,ind] = sort(Ebet.Fixation1_OnsetTime);
-Ebet = Ebet(ind,:);
 
 % Initialize output data
 Ebet.RT = Ebet.GameScreen_RT;
@@ -44,7 +46,25 @@ Ebet.LoseStay(:) = {' '};
 Ebet.ProbabilisticLoss(:) = nan(height(Ebet),1);
 Ebet.SubOptimalDeckLoss(:) = nan(height(Ebet),1);
 
-% Label FMRI sections (four runs) and verify
+% We should have exactly 160 trials (4 runs, 40 trials each)
+if height(Ebet) ~= 160
+	error('Expected 160 trials but found %d',height(Ebet))
+end
+
+% If trials aren't numbered 1:160, we have a concatenated eprime.txt and
+% need to renumber
+renumberflag = 0;
+if ~all(Ebet.Play_Sample==[1:160]')
+	if renumoverride==1
+		warning('Inconsistent trial numbering found - renumbering')
+		Ebet.Play_Sample = [1:160]';
+		renumberflag = 1;
+	else
+		error('Inconsistent trial numbering found')
+	end
+end
+
+% Label FMRI sections (four runs) and verify.
 Ebet.Run(Ebet.Play_Sample>=  1 & Ebet.Play_Sample<= 40) = 1;
 Ebet.Run(Ebet.Play_Sample>= 41 & Ebet.Play_Sample<= 80) = 2;
 Ebet.Run(Ebet.Play_Sample>= 81 & Ebet.Play_Sample<=120) = 3;
@@ -64,16 +84,24 @@ end
 if isempty(fmri_dcm)
 	
 	warning('No fMRI DICOM provided - skipping eprime date/time check')
-
+	
 else
 	
 	eprime_date = unique(Efull.SessionDate(cellfun(@(x) ~isempty(x),Efull.SessionDate)));
-	if numel(eprime_date)~=1
-		error('Found wrong number of unique SessionDate in eprime csv')
+	if numel(eprime_date)==0
+		error('Failed to find SessionDate in eprime csv')
+	elseif numel(eprime_date)>1
+		error('Found multiple SessionDate in eprime csv')
 	end
 	eprime_time = unique(Efull.SessionTime(cellfun(@(x) ~isempty(x),Efull.SessionTime)));
-	if numel(eprime_time)~=1
-		error('Found wrong number of unique SessionTime in eprime csv')
+	if numel(eprime_time)==0
+		error('Failed to find SessionTime in eprime csv')
+	elseif numel(eprime_time)>1
+		if renumberflag==0
+			error('Found multiple SessionTime in eprime csv')
+		else
+			warning('Multiple SessionTime in eprime csv (expected with renumbering)')
+		end
 	end
 	eprime_datetime = datetime([eprime_date{1} ' ' eprime_time{1}], ...
 		'InputFormat','MM-dd-yyyy HH:mm:ss');
@@ -126,8 +154,8 @@ for r = [1 2 3 4]
 		(Ebet.T1_TrialStart(Ebet.Run==r) - offsets(r)) / 1000;
 	Ebet.T2b_CardFlipOnset_fMRIsec(Ebet.Run==r) = ...
 		(Ebet.T2b_CardFlipOnset(Ebet.Run==r) - offsets(r)) / 1000;
-    Ebet.T3_FeedbackOnset_fMRIsec(Ebet.Run==r) = ...
-    	(Ebet.T3_FeedbackOnset(Ebet.Run==r) - offsets(r)) / 1000;
+	Ebet.T3_FeedbackOnset_fMRIsec(Ebet.Run==r) = ...
+		(Ebet.T3_FeedbackOnset(Ebet.Run==r) - offsets(r)) / 1000;
 	fprintf('Run %d first TrialStart: %0.2f sec\n', ...
 		r,min(Ebet.T1_TrialStart_fMRIsec(Ebet.Run==r)));
 end
@@ -259,7 +287,7 @@ end
 % 	100 * (summary.Run1_LoseSwitch + summary.Run2_LoseSwitch) / ...
 % 	(summary.Run1_LoseStay + summary.Run2_LoseStay + ...
 % 	summary.Run1_LoseSwitch + summary.Run2_LoseSwitch);
-% 
+%
 % summary.Run34_WinStayPct = ...
 % 	100 * (summary.Run3_WinStay + summary.Run4_WinStay) / ...
 % 	(summary.Run3_WinStay + summary.Run4_WinStay + ...
@@ -288,15 +316,32 @@ Ebet = sortrows(Ebet,'Trial');
 
 
 %% Save trial-by-trial data
-report = Ebet(:,{'Run','Play_Sample','TrialType', 'RT', ...
-	'Switch', ...
-	'WinSwitch','WinStay','LoseSwitch','LoseStay',...
-	'ChosenColor','ChosenProb', ...
-	'WinningDeck','Outcome','ProbabilisticLoss','SubOptimalDeckLoss', ...
-	'Offset_fMRI','T1_TrialStart','T1_TrialStart_fMRIsec', ...
-	'T2b_CardFlipOnset','T2b_CardFlipOnset_fMRIsec', ...
-	'T3_FeedbackOnset','T3_FeedbackOnset_fMRIsec' ...
-	});
+if renumoverride == 1
+	% fMRI trial times are wrong if we renumbered, so exclude them from the
+	% output so later steps will fail if they try to use them
+	warning('FMRI trial times excluded from output due to trial renumbering')
+	report = Ebet(:,{ ...
+		'Run','Play_Sample','TrialType', 'RT', ...
+		'Switch', ...
+		'WinSwitch','WinStay','LoseSwitch','LoseStay',...
+		'ChosenColor','ChosenProb', ...
+		'WinningDeck','Outcome','ProbabilisticLoss','SubOptimalDeckLoss', ...
+		'Offset_fMRI','T1_TrialStart', ...
+		'T2b_CardFlipOnset', ...
+		'T3_FeedbackOnset', ...
+		});
+else
+	report = Ebet(:,{ ...
+		'Run','Play_Sample','TrialType', 'RT', ...
+		'Switch', ...
+		'WinSwitch','WinStay','LoseSwitch','LoseStay',...
+		'ChosenColor','ChosenProb', ...
+		'WinningDeck','Outcome','ProbabilisticLoss','SubOptimalDeckLoss', ...
+		'Offset_fMRI','T1_TrialStart','T1_TrialStart_fMRIsec', ...
+		'T2b_CardFlipOnset','T2b_CardFlipOnset_fMRIsec', ...
+		'T3_FeedbackOnset','T3_FeedbackOnset_fMRIsec' ...
+		});
+end
 report_csv = fullfile(out_dir,'eprime_report.csv');
 writetable(report,report_csv);
 

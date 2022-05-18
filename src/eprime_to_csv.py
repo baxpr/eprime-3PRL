@@ -61,11 +61,6 @@ def main():
         parsed_frame = pandas.DataFrame(dict(parsed_frame),index=[0])
         parsed_frames = parsed_frames.append(parsed_frame)
 
-    # Sort by level for pretty
-    # NOTE: If done, events are no longer sorted in the original order! Must be re-sorted
-    # by a timestamp field if the order is important.
-    #parsed_frames = parsed_frames.sort_values(axis=0,by='Level')
-
     # Write to CSV
     print(f'Saving to {out_csv}')
     parsed_frames.to_csv(out_csv)
