@@ -95,6 +95,6 @@ fi
 while IFS= read -r -d $'\0' file; do
 	echo Checking $file
 	"${upload_cmd}" --eprime_txt "${file}" --project "${project}" --overwrite "${overwrite}"
-done < <(find "${dir}" ${daybit} \( -name ??????_?????_*.txt \) -print0)
+done < <(find "${dir}" ${daybit} \( -name ??????_?????_\*.txt \) -print0)
 
 echo Done.
