@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 export MATLABROOT=~/MATLAB/R2023a
 export PATH=${MATLABROOT}/bin:${PATH}
