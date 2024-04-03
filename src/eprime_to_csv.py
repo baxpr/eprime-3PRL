@@ -59,7 +59,8 @@ def main():
         parsed_frame = re.findall(expr_fields,frame[1])
         parsed_frame.append(('Level',frame[0]))
         parsed_frame = pandas.DataFrame(dict(parsed_frame),index=[0])
-        parsed_frames = parsed_frames.append(parsed_frame)
+        #parsed_frames = parsed_frames.append(parsed_frame)
+        parsed_frames = pandas.concat([parsed_frames, parsed_frame], ignore_index=True)
 
     # Write to CSV
     print(f'Saving to {out_csv}')
