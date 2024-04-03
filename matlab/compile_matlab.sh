@@ -1,20 +1,7 @@
 #!/bin/sh
-#
-# Compile the matlab code so we can run it without a matlab license. To create
-# a linux container, we need to compile on a linux machine. That means a VM, if
-# we are working on OS X.
-#
-# We require on our compilation machine:
-#     Matlab 2019b, including compiler, with license
-#
-# The matlab version matters. If we compile with R2019b, it will only run under 
-# the R2019b Runtime.
 
-# Where is Matlab?
-MATLAB_ROOT=/usr/local/MATLAB/R2019b
-
-# We may need to add Matlab to the path on the compilation machine
-PATH=${MATLAB_ROOT}/bin:${PATH}
+export MATLABROOT=~/MATLAB/R2023a
+export PATH=${MATLABROOT}/bin:${PATH}
 
 # Compile. Use -a to include an entire directory and all its contents,
 # recursively. We use this for our own code. Use -N to leave out toolboxes to
