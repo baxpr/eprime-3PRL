@@ -8,6 +8,7 @@ echo Running $(basename "${BASH_SOURCE}")
 
 # Initialize defaults
 export timeoverride=0
+export renumoverride=0
 export out_dir=/OUTPUTS
 fmri_dcm_str=
 
@@ -27,6 +28,9 @@ do
 
         --timeoverride)
             export timeoverride="$2"; shift; shift ;;
+
+        --renumoverride)
+            export renumoverride="$2"; shift; shift ;;
 
         --out_dir)
             export out_dir="$2"; shift; shift ;;
@@ -48,4 +52,5 @@ xvfb-run -n $(($$ + 99)) -s '-screen 0 1600x1200x24 -ac +extension GLX' \
     eprime_csv "${out_dir}"/eprime.csv \
     ${fmri_dcm_str} \
     timeoverride "${timeoverride}" \
+    renumoverride "${renumoverride}" \
     out_dir "${out_dir}"
