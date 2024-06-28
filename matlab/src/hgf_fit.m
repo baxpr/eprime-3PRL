@@ -15,9 +15,9 @@ inds34 = ismember(info.Run,[3 4]);
 % Coding and fit for "easy". Default to NaN so fitModel will ignore
 % responses or trials with missing info.
 responses1 = nan(sum(inds12),1);
-responses1(strcmp(info.ChosenProb(inds12),'Deck10')) = 1;
-responses1(strcmp(info.ChosenProb(inds12),'Deck50')) = 2;
-responses1(strcmp(info.ChosenProb(inds12),'Deck90')) = 3;
+responses1(strcmp(info.ChosenColor(inds12),'DeckBlack.bmp')) = 1;
+responses1(strcmp(info.ChosenColor(inds12),'DeckBlue.bmp')) = 2;
+responses1(strcmp(info.ChosenColor(inds12),'DeckRed.bmp')) = 3;
 
 outcomes1 = nan(sum(inds12),1);
 outcomes1(strcmp(info.Outcome(inds12),'Lose')) = 0;
@@ -33,9 +33,9 @@ result12 = tapas_fitModel( ...
 % Coding and fit for "hard". Replace mu_0(2) and mu_0(3) with previous
 % half's est parameters
 responses2 = nan(sum(inds34),1);
-responses2(strcmp(info.ChosenProb(inds34),'Deck20')) = 1;
-responses2(strcmp(info.ChosenProb(inds34),'Deck40')) = 2;
-responses2(strcmp(info.ChosenProb(inds34),'Deck80')) = 3;
+responses2(strcmp(info.ChosenColor(inds34),'DeckBlack.bmp')) = 1;
+responses2(strcmp(info.ChosenColor(inds34),'DeckBlue.bmp')) = 2;
+responses2(strcmp(info.ChosenColor(inds34),'DeckRed.bmp')) = 3;
 
 outcomes2 = nan(sum(inds34),1);
 outcomes2(strcmp(info.Outcome(inds34),'Lose')) = 0;
